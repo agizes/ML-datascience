@@ -65,7 +65,7 @@ dim(training)
 We keep the same 53 columns, therefore out of these non of them has zero variance.
 
 From this clean dataset we split the dataset into two, to train and validate the model
-```{r train/test split echo=FALSE}
+```{r training-test split, echo=FALSE}
 split <- createDataPartition(training$classe, p=0.70, list=F)
 trainingDS <- training[split,]
 validationDS <- training[-split,]
@@ -73,7 +73,7 @@ validationDS <- training[-split,]
 ```
 
 We apply the same cleansing for the testing dataset, so both are comparable.
-```{r clean testing dataset echo=FALSE}
+```{r clean testing dataset, echo=FALSE}
 dim(testing)
 testing <- testing[,-(1:7)]
 testing <- testing[, nonNAcols]
@@ -86,12 +86,12 @@ Now we're ready to start modelling.
 #### **Model generation**   
 We first set the seed for reproducibility matters and get the test and training datasets.
 We generate a model based on **random forest** resampling 10 times (cross-validations)
-```{r RF modeling}
+```{r RF modelling}
 set.seed(1977)
 RFmodelFit<- train(classe ~ ., data=trainingDS, method="rf", trControl = trainControl(method="cv"),number=10)
 RFmodelFit
 ```
-We already see from this output that the model is quite accurate (0.9922846  for 2 variables randomly sampled as candidates at each split).
+We already see from this output that the model is quite accurate (0.99  for 2 variables randomly sampled as candidates at each split).
 Once we have the model, let's see how accurate it is
 
 ```{r RF testing}
@@ -102,7 +102,7 @@ We see the random forest model fits extremely well the validation dataset (0.997
 
 Let's try a **boost model**.
 
-```{r RF modeling}
+```{r Boost modeling}
 BoostmodelFit<- train(classe ~ ., data=trainingDS, method="gbm",verbose=FALSE)
 BoostmodelFit
 ```
@@ -113,7 +113,7 @@ BoostmodelPred<-predict(BoostmodelFit,validationDS)
 confusionMatrix(BoostmodelPred,validationDS$classe)
 ```
 
-So the boosting model has a 0.9594 accuracy versus the 0.9922846 accuracy of the random forest one. Therefore, the preferred model would be the random forest.
+So the boosting model has a 0.96 accuracy versus the 0.9985 accuracy of the random forest one. Therefore, the preferred model would be the random forest.
 
 ### **Prediction on test dataset**
 Let's take a look at test results of both models and compare them.
@@ -125,7 +125,7 @@ table(RFTest,BoostTtest)
 ```
 We see that both models give the same result on the testing dataset (we get figures only in the diagonal of the table). By the way, this is not the case if we make the same exercise on any of the training dataset
 
-```{r Prediction testing}
+```{r Prediction testing vs. training}
 RFTest <- predict(RFmodelFit, trainingDS)
 BoostTtest<- predict(BoostmodelFit, trainingDS)
 table(RFTest,BoostTtest)
