@@ -1,0 +1,137 @@
+---
+title: "ML-course project"
+author: "A.Izquierdo"
+date: "5/10/2020"
+output: html_document
+df_print: paged
+fontsize: 9pt
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+### **Executive Summary**
+In this data analysis we aim predict the way in which a set of individuals practised barbell lifts. For this purpose we will generate a Machine Learning Model that we'll validate, analyze and justify.
+Data are based on the [Human Activity Recognition group](http://groupware.les.inf.puc-rio.br/har) and can be found in these two links:
+- [Testing data](https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv), 
+- [Training data](https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv).
+The goal of the model is to predict the training "classe" (A,B,C,D or E) based on the set of variables available in teh file. We'll follow the standard procedure base on data exploration, cleansing, model training, testing and validation.
+
+#### **Libraries used**   
+We load into R the packages used
+```{r libraries, echo=FALSE}
+library(caret)
+library(gbm)
+library(AppliedPredictiveModeling)
+```
+
+#### **Test and training data sets**   
+We first load the training and test datasets. Notice we've forced N/A strings to be "NA", "" and "#DIV/0!" because in a pre-exploratory analysis we've detected this N/A values. In this previous analysis we've also seen that columns 8-160 contain variables and columns 1-7 contain dimensions.
+```{r datasets}
+training <- read.csv("C:/Users/agustin.izquierdo/Documents/R/coursera/Practical Machine Learning/pml-training.csv",na.strings=c("NA","","#DIV/0!"))
+testing <- read.csv("C:/Users/agustin.izquierdo/Documents/R/coursera/Practical Machine Learning/pml-testing.csv",na.strings=c("NA","","#DIV/0!"))
+```
+
+#### **Exploratory analysis**   
+The training data has 19622 observations 160 variables and 5 measured classes.
+```{r exploratory}
+summary(training$classe)
+dim(training)
+```
+
+#### **Data cleansing**   
+We'll clean the dataset in three steps. 
+First we get rid of the first **seven** columns, which contain dimensions we'll not use for the prediction (we'll use only the **classe** dimension and the variables). These dimensions contain information such as row number, username, timestamp and 'window'.
+
+```{r non-used columns}
+training <- training[,-(1:7)]
+```
+
+We have already mentioned we set to N/A all the empty characters.
+No we get rid of all those variables which are empty.
+```{r empty columns}
+nonNAcols <- colSums(is.na(training))==0
+training <- training[, nonNAcols]
+dim(training)
+```
+We move from 160 columns in the original dataset to 53
+
+Finally,  we look for the non-zero variance predictors, with the NearZeroVar function. From its outcome, we take from the training dataset only those variables which have non-zero variance
+```{r zero variance predictors}
+NZV<-nearZeroVar(training, saveMetrics = TRUE)
+training <- training[ , NZV$nzv==FALSE]
+dim(training)
+```
+We keep the same 53 columns, therefore out of these non of them has zero variance.
+
+From this clean dataset we split the dataset into two, to train and validate the model
+```{r train/test split echo=FALSE}
+split <- createDataPartition(training$classe, p=0.70, list=F)
+trainingDS <- training[split,]
+validationDS <- training[-split,]
+
+```
+
+We apply the same cleansing for the testing dataset, so both are comparable.
+```{r clean testing dataset echo=FALSE}
+dim(testing)
+testing <- testing[,-(1:7)]
+testing <- testing[, nonNAcols]
+testing <- testing[ , NZV$nzv==FALSE]
+dim(testing)
+```
+
+Now we're ready to start modelling. 
+
+#### **Model generation**   
+We first set the seed for reproducibility matters and get the test and training datasets.
+We generate a model based on **random forest** resampling 10 times (cross-validations)
+```{r RF modeling}
+set.seed(1977)
+RFmodelFit<- train(classe ~ ., data=trainingDS, method="rf", trControl = trainControl(method="cv"),number=10)
+RFmodelFit
+```
+We already see from this output that the model is quite accurate (0.9922846  for 2 variables randomly sampled as candidates at each split).
+Once we have the model, let's see how accurate it is
+
+```{r RF testing}
+RFmodelPred<-predict(RFmodelFit,training)
+confusionMatrix(RFmodelPred,training$classe)
+```
+We see the random forest model fits extremely well the validation dataset (0.9978 accuracy)
+
+Let's try a **boost model**.
+
+```{r RF modeling}
+BoostmodelFit<- train(classe ~ ., data=trainingDS, method="gbm",verbose=FALSE)
+BoostmodelFit
+```
+We see hte accuracy is lower than the random forest model. Let's see it detail:
+
+```{r Boosting model  testing}
+BoostmodelPred<-predict(BoostmodelFit,validationDS)
+confusionMatrix(BoostmodelPred,validationDS$classe)
+```
+
+So the boosting model has a 0.9594 accuracy versus the 0.9922846 accuracy of the random forest one. Therefore, the preferred model would be the random forest.
+
+### **Prediction on test dataset**
+Let's take a look at test results of both models and compare them.
+
+```{r Prediction testing}
+RFTest <- predict(RFmodelFit, testing)
+BoostTtest<- predict(BoostmodelFit, testing)
+table(RFTest,BoostTtest)
+```
+We see that both models give the same result on the testing dataset (we get figures only in the diagonal of the table). By the way, this is not the case if we make the same exercise on any of the training dataset
+
+```{r Prediction testing}
+RFTest <- predict(RFmodelFit, trainingDS)
+BoostTtest<- predict(BoostmodelFit, trainingDS)
+table(RFTest,BoostTtest)
+```
+
+Finally, we write the output of the random forest model on a text file:
+```{r prediction output}
+writeLines(as.character(RFTest),"modelPredictionTest.txt")
+```
