@@ -13,13 +13,15 @@ knitr::opts_chunk$set(echo = TRUE)
 ### **Executive Summary**
 In this data analysis we aim predict the way in which a set of individuals practised barbell lifts. For this purpose we will generate a Machine Learning Model that we'll validate, analyze and justify.
 Data are based on the [Human Activity Recognition group](http://groupware.les.inf.puc-rio.br/har) and can be found in these two links:
-- [Testing data](https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv), 
-- [Training data](https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv).
+
+- [Testing data](https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv)
+- [Training data](https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv)
+
 The goal of the model is to predict the training "classe" (A,B,C,D or E) based on the set of variables available in teh file. We'll follow the standard procedure base on data exploration, cleansing, model training, testing and validation.
 
 #### **Libraries used**   
 We load into R the packages used
-```{r libraries, echo=FALSE}
+```{r libraries}
 library(caret)
 library(gbm)
 library(AppliedPredictiveModeling)
@@ -73,7 +75,7 @@ validationDS <- training[-split,]
 ```
 
 We apply the same cleansing for the testing dataset, so both are comparable.
-```{r clean testing dataset, echo=FALSE}
+```{r clean testing dataset}
 dim(testing)
 testing <- testing[,-(1:7)]
 testing <- testing[, nonNAcols]
@@ -106,7 +108,7 @@ Let's try a **boost model**.
 BoostmodelFit<- train(classe ~ ., data=trainingDS, method="gbm",verbose=FALSE)
 BoostmodelFit
 ```
-We see hte accuracy is lower than the random forest model. Let's see it detail:
+We see the accuracy is lower than the random forest model. Let's see it detail:
 
 ```{r Boosting model  testing}
 BoostmodelPred<-predict(BoostmodelFit,validationDS)
