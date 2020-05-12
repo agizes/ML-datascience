@@ -128,9 +128,9 @@ table(RFTest,BoostTtest)
 We see that both models give the same result on the testing dataset (we get figures only in the diagonal of the table). By the way, this is not the case if we make the same exercise on any of the training dataset
 
 ```{r Prediction testing vs. training}
-RFTest <- predict(RFmodelFit, trainingDS)
-BoostTtest<- predict(BoostmodelFit, trainingDS)
-table(RFTest,BoostTtest)
+RFTest2 <- predict(RFmodelFit, trainingDS)
+BoostTtest2<- predict(BoostmodelFit, trainingDS)
+table(RFTest2,BoostTtest2)
 ```
 
 Finally, we write the output of the random forest model on a text file:
